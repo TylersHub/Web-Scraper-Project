@@ -1,9 +1,14 @@
 import React from "react";
 
-const Button = () => {
+interface Props {
+  btnName: string;
+  btnClick: () => void;
+}
+
+const Button = ({ btnName, btnClick }: Props) => {
   return (
-    <button type="button" className="btn btn-primary">
-      Search
+    <button className="btn btn-primary" onClick={btnClick}>
+      {btnName}
     </button>
   );
 };
