@@ -1,3 +1,4 @@
+import ProductCard from "./ProductCard";
 import React, { useEffect, useState } from "react";
 
 interface DataProps {
@@ -44,17 +45,24 @@ const DatabaseComp = () => {
   return (
     <div>
       <h1>Data from Flask API (Backend Database)</h1>
-      <ul>
+      <ul className="list-group">
         {data.map((item) => (
           <li key={item.id}>
-            <div>Name: {item.name}</div>
+            {/*<div>Name: {item.name}</div>
             <div>
               Image: <img src={item.image} alt={item.name} />
             </div>
             <div>
               URL: <a href={item.url}>{item.url}</a>
             </div>
-            <div>Price: ${item.price}</div>
+            <div>Price: ${item.price}</div>*/}
+            <ProductCard
+              id={item.id}
+              name={item.name}
+              image={item.image}
+              url={item.url}
+              price={item.price}
+            />
           </li>
         ))}
       </ul>
