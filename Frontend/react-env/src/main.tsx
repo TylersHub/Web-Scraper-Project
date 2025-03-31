@@ -8,3 +8,5 @@ ReactDOM.createRoot(document.getElementById("root") as HTMLElement).render(
     <App />
   </React.StrictMode>
 );
+
+// StrictMode causes things like UseEffect() to run twice to help find problems, but it can also cause inconveniences

@@ -5,7 +5,7 @@ interface Props {
   name?: string;
   image?: string;
   url?: string;
-  price?: number;
+  price?: string;
 }
 
 const ProductCard = ({
@@ -13,7 +13,7 @@ const ProductCard = ({
   name = "N/A",
   image = "No image",
   url = "N/A",
-  price = 0,
+  price = "0",
 }: Props) => {
   return (
     <div className="card" style={{ width: "18rem" }}>
