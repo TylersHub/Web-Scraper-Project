@@ -1,2 +1,3 @@
-# Web-Scraper-Project
-A project for Web Scraping
+# Pricetunity
+
+A website that displays the best prices for any item you search!
