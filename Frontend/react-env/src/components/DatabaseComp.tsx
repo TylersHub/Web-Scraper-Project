@@ -34,18 +34,18 @@ const DatabaseComp: React.FC<Props> = ({ reloadKey }) => {
     <div className="container">
       <h2>Search Results</h2>
 
-      <div className="mb-3">
+      <div className="">
         <button onClick={fetchData} className="btn btn-secondary">
           Refresh Results
         </button>
       </div>
 
-      {loading && <p>Loading products...</p>}
+      {loading && <p>Loading results...</p>}
 
-      <div className="row">
+      <div className="row m-3">
         {data.length > 0 ? (
           data.map((item) => (
-            <div className="col-md-4" key={item.id}>
+            <div className="col-lg-3" key={item.id}>
               <ProductCard
                 id={item.id}
                 name={item.name}

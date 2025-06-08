@@ -29,7 +29,7 @@ def scrape_and_save_data(search_query=None):
     Product.query.delete()
     for i, element in enumerate(elements):
         try:
-            name = element.select_one("h2 a span")
+            name = element.select_one("a h2 span")
             name = name.text.strip() if name else "No product name available"
 
             url = element.select_one("h2 a")
