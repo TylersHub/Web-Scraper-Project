@@ -25,27 +25,59 @@ class Product(db.Model):
 
 def scrape_and_save_data(search_query=None):
     elements = scrape_amazon(search_query) if search_query else scrape_amazon()
-    # Clear existing data before new scrape
+
     Product.query.delete()
+
+    products = []
+
     for i, element in enumerate(elements):
         try:
-            name = element.select_one("a h2 span")
-            name = name.text.strip() if name else "No product name available"
+            name_el = element.select_one("a h2 span")
+            name = name_el.text.strip() if name_el else "No product name available"
 
-            url = element.select_one("h2 a")
-            url = f"https://www.amazon.com{url['href']}" if url and url.has_attr("href") else "No URL available"
+            url_el = element.select_one("a.a-link-normal")
+            url = f"https://www.amazon.com{url_el['href']}" if url_el and url_el.has_attr("href") else "No URL available"
 
-            image = element.select_one("img.s-image")
-            image = image["src"] if image and image.has_attr("src") else "No image available"
+            image_el = element.select_one("img.s-image")
+            image = image_el["src"] if image_el and image_el.has_attr("src") else "No image available"
 
-            price = element.select_one("span.a-offscreen")
-            price = price.text if price else "Price not available"
+            price_el = element.select_one("span.a-offscreen")
+            price = price_el.text if price_el else "Price not available"
 
-            new_product = Product(name=name, image=image, url=url, price=price)
-            db.session.add(new_product)
+            try:
+                price_value = float(price.replace("$", "").replace(",", ""))
+            except:
+                continue  # Skip products with non-numeric prices
+
+            # Insert into sorted list (ascending order)
+            inserted = False
+            for j in range(len(products)):
+                if price_value < products[j]['price_value']:
+                    products.insert(j, {
+                        'name': name,
+                        'url': url,
+                        'image': image,
+                        'price': price,
+                        'price_value': price_value
+                    })
+                    inserted = True
+                    break
+            if not inserted:
+                products.append({
+                    'name': name,
+                    'url': url,
+                    'image': image,
+                    'price': price,
+                    'price_value': price_value
+                })
+
         except Exception as e:
             print(f"Error on element {i + 1}: {e}")
+
+    for p in products:
+        db.session.add(Product(name=p['name'], image=p['image'], url=p['url'], price=p['price']))
     db.session.commit()
+
 
 @app.route('/api/data', methods=['POST'])
 def add_data():
