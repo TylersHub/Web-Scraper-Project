@@ -29,12 +29,12 @@ const App: React.FC = () => {
   return (
     <div className="container">
       <div className="row text-center">
-        <p className="fs-1 fw-semibold">Web Scraper</p>
+        <p className="fs-1 fw-semibold">Pricetunity</p>
       </div>
 
       <div className="row mb-4">
         <SearchBar
-          inputLabel="Search Amazon"
+          inputLabel="Search the web (amazon for now)"
           inputPlaceholder="e.g. mechanical keyboard"
           onSearch={searchProducts}
         />
