@@ -1,15 +1,13 @@
-import asyncio
 from flask import Flask, jsonify, request
 from flask_sqlalchemy import SQLAlchemy
 from flask_cors import CORS
-from selenium.webdriver.common.by import By
-
-#from scraper import create_webdriver, scrape_amazon
+from scraper import scrape_amazon  # Now uses Bright Data
 
 app = Flask(__name__)
 CORS(app)
+#app.config["SQLALCHEMY_DATABASE_URI"] = "sqlite:///:memory:"
+app.config["SQLALCHEMY_DATABASE_URI"] = "sqlite:///products.db"
 
-app.config['SQLALCHEMY_DATABASE_URI'] = 'sqlite:///product_data.db'
 db = SQLAlchemy(app)
 
 class Product(db.Model):
@@ -25,116 +23,54 @@ class Product(db.Model):
         self.url = url
         self.price = price
 
-'''@app.route('/api/data', methods=['POST'])
-def add_data():
-    if request.method == 'POST':
-        data = request.json
-        new_product = Product(
-            name=data['name'], 
-            image=data['image'], 
-            url=data['url'], 
-            price=data['price']
-        )
-        db.session.add(new_product)
-        db.session.commit()
-        return jsonify({'message': 'New product added!'}), 201'''
+def scrape_and_save_data(search_query=None):
+    elements = scrape_amazon(search_query) if search_query else scrape_amazon()
+    # Clear existing data before new scrape
+    Product.query.delete()
+    for i, element in enumerate(elements):
+        try:
+            name = element.select_one("h2 a span")
+            name = name.text.strip() if name else "No product name available"
 
+            url = element.select_one("h2 a")
+            url = f"https://www.amazon.com{url['href']}" if url and url.has_attr("href") else "No URL available"
 
-def scrape_and_save_data():
-    from scraper import create_webdriver, scrape_amazon
-    driver = create_webdriver()
-    try:
-        element_list = scrape_amazon(driver)
+            image = element.select_one("img.s-image")
+            image = image["src"] if image and image.has_attr("src") else "No image available"
 
-        for index, element in enumerate(element_list):
-            try:
-                #whole_part_element = element.find_element(By.CLASS_NAME, "a-price-whole")
-                #fraction_part_element = element.find_element(By.CLASS_NAME, "a-price-fraction")
-                #whole_part = whole_part_element.text
-                #fraction_part = fraction_part_element.text
+            price = element.select_one("span.a-offscreen")
+            price = price.text if price else "Price not available"
 
-                try:
-                    name = element.find_element(By.CSS_SELECTOR, "h2 a span").text
-                    #name = element.text
-                except:
-                    name = "No product name available"
-
-                # Product URL
-                try:
-                    url = element.find_element(By.CSS_SELECTOR, "h2 > a.a-link-normal").get_attribute("href")
-                except:
-                    url = "No URL available"
-
-                # Product Image
-                try:
-                    image = element.find_element(By.CSS_SELECTOR, "img.s-image").get_attribute("src")
-                except:
-                    image = "No image available"
-
-                # Product Price
-                try:
-                    price = element.find_element(By.CSS_SELECTOR, "span.a-offscreen").text
-                except:
-                    price = "Price not available"
-
-                #print(f"Element {index + 1} text: {element.text}")
-                print(f"Element {index + 1} text: {name}")
-                print(f"Element {index + 1} url: {url}")
-                print(f"Element {index + 1} image: {image}")
-                print(f"Element {index + 1} price: {price}")
-                #print(f"Element {index + 1} HTML: {element.get_attribute('outerHTML')}")
-
-
-                new_product = Product(
-                    #id = index + 1,
-                    #name = element.text,
-                    #image = element.get_attribute('img'),
-                    #url = element.get_attribute('href'),
-                    #price = f"{whole_part}.{fraction_part}"
-                    name=name,
-                    image=image,
-                    url=url,
-                    price=price
-                )
-                print(f"New product: {new_product}")
-                db.session.add(new_product)
-                print(f"New product: {new_product}")
-
-            except Exception as e:
-                print(f"Error processing element {index + 1}: {e}")
-
-        db.session.commit()
-        print(f"New product: {new_product}")
-    finally:
-        #driver.quit()
-        pass
+            new_product = Product(name=name, image=image, url=url, price=price)
+            db.session.add(new_product)
+        except Exception as e:
+            print(f"Error on element {i + 1}: {e}")
+    db.session.commit()
 
 @app.route('/api/data', methods=['POST'])
-async def add_data():
-    # Start the scraper as an asynchronous task
-    #loop = asyncio.get_event_loop()
-    #await loop.run_in_executor(None, scrape_and_save_data)
-    scrape_and_save_data()
-    return jsonify({'message': 'Scraping started! Data will be added shortly.'}), 202
+def add_data():
+    data = request.get_json()
+    search_query = data.get('query') if data else None
+    scrape_and_save_data(search_query)
+    return jsonify({'message': 'Scraping completed and data added!'}), 202
 
 @app.route('/api/data', methods=['GET'])
 def get_data():
     data = Product.query.all()
     result = [{
-        'id': item.id, 
-        'name': item.name, 
-        'image': item.image, 
-        'url': item.url, 
+        'id': item.id,
+        'name': item.name,
+        'image': item.image,
+        'url': item.url,
         'price': item.price
-        } for item in data]
+    } for item in data]
     return jsonify(result)
 
 @app.route('/')
-def message():
+def home():
     return 'Hello, just a webpage...'
 
 if __name__ == '__main__':
-    #make sure to create the database and tables before running the app
-    with app.app_context(): 
+    with app.app_context():
         db.create_all()
     app.run(debug=True, use_reloader=False)

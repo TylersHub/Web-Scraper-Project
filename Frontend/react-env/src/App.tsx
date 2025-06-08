@@ -1,33 +1,56 @@
-import React from "react";
-import Button from "./components/Button";
-import InputBox from "./components/InputBox";
-import ProductCard from "./components/ProductCard";
+import React, { useState } from "react";
+import SearchBar from "./components/SearchBar";
 import DatabaseComp from "./components/DatabaseComp";
-import { useState } from "react";
 
-const App = () => {
-  const [Visible, setVisible] = useState(false);
+const App: React.FC = () => {
+  const [showResults, setShowResults] = useState(false);
+  const [loading, setLoading] = useState(false);
+  const [reloadKey, setReloadKey] = useState(0);
+
+  const searchProducts = (searchTerm: string) => {
+    setLoading(true);
+    fetch("http://localhost:5000/api/data", {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify({ query: searchTerm }),
+    })
+      .then((res) => res.json())
+      .then(() => {
+        console.log(`Scraping started for: ${searchTerm}`);
+        setShowResults(true);
+        setReloadKey((prev) => prev + 1); // trigger reload in DatabaseComp
+      })
+      .catch((error) => console.error("Error scraping:", error))
+      .finally(() => setLoading(false));
+  };
 
   return (
-    <div className="row container-fluid">
-      <div className="col-12">
-        <p className="text-center fs-1 fw-semibold">Web Scraper</p>
+    <div className="container">
+      <div className="row text-center">
+        <p className="fs-1 fw-semibold">Web Scraper</p>
       </div>
-      <div className="col-12">
-        <InputBox inputLabel="Search Bar" inputPlaceholder="Search" />
-      </div>
-      <div className="col-12 pb-2">
-        <ProductCard
-          id={1}
-          name="Product1 (Testing Purposes)"
-          image=""
-          url=""
+
+      <div className="row mb-4">
+        <SearchBar
+          inputLabel="Search Amazon"
+          inputPlaceholder="e.g. mechanical keyboard"
+          onSearch={searchProducts}
         />
       </div>
-      <div className="col-12">
-        <Button btnName="DB Load" btnClick={() => setVisible(true)} />
-      </div>
-      <div className="col-12">{Visible && <DatabaseComp />}</div>
+
+      {loading && (
+        <div className="row text-center">
+          <p>Loading and scraping...</p>
+        </div>
+      )}
+
+      {showResults && (
+        <div className="row">
+          <DatabaseComp reloadKey={reloadKey} />
+        </div>
+      )}
     </div>
   );
 };

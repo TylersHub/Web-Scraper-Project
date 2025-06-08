@@ -1,89 +1,60 @@
-from selenium import webdriver
-from selenium.webdriver.chrome.service import Service
-from selenium.webdriver.common.by import By
-from selenium.webdriver.common.keys import Keys
-from selenium.webdriver.support.ui import WebDriverWait
-from selenium.webdriver.support import expected_conditions as EC
-from webdriver_manager.chrome import ChromeDriverManager
-import time
+import os
+import requests
+from bs4 import BeautifulSoup
+from dotenv import load_dotenv
 
-def create_webdriver():
-    service = Service(ChromeDriverManager().install())
-    driver = webdriver.Chrome(service=service)
-    return driver
+load_dotenv()
 
-def scrape_amazon(driver):
+api_key = os.getenv("BRIGHT_DATA_API_KEY")
+zone = os.getenv("BRIGHT_DATA_ZONE")
+url = os.getenv("BRIGHT_DATA_URL")
+
+if not api_key or not zone:
+    raise EnvironmentError("Missing BRIGHT_DATA_API_KEY or BRIGHT_DATA_ZONE in .env")
+
+def scrape_with_web_unlocker(target_url: str) -> str:
+
+    headers = {
+        "Authorization": f"Bearer {api_key}",
+        "Content-Type": "application/json"
+    }
+    data = {
+        "zone": zone,
+        "url": target_url,
+        "format": "raw"
+    }
 
     try:
-        while True:
-            driver.get("https://google.com")
-
-            WebDriverWait(driver, 5).until(
-                EC.presence_of_element_located((By.CLASS_NAME, "gLFyf"))
-            )
-
-            google_search = driver.find_element(By.CLASS_NAME, "gLFyf")
-            google_search.clear()
-            google_search.send_keys("Amazon" + Keys.ENTER)
-
-            WebDriverWait(driver, 5).until(
-                EC.presence_of_element_located((By.PARTIAL_LINK_TEXT, "Amazon.com. Spend less. Smile more."))
-            )
-
-            link = driver.find_element(By.PARTIAL_LINK_TEXT, "Amazon.com. Spend less. Smile more.")
-            link.click()
-
-            try:
-                WebDriverWait(driver, 5).until(
-                    EC.presence_of_element_located((By.ID, "twotabsearchtextbox"))
-                )
-                #If found then break the loop
-                break
-            except Exception as e:
-                print("Amazon search box not found, retrying...")
-                time.sleep(2)
-
-        amazon_search = driver.find_element(By.ID, "twotabsearchtextbox")
-        amazon_search.clear()
-        amazon_search.send_keys("RTX 3080" + Keys.ENTER)
-
-        element_list = WebDriverWait(driver, 20).until(
-            #EC.presence_of_all_elements_located(
-            #(By.XPATH, "//div[@class='s-main-slot s-result-list s-search-results sg-row']//*[contains(text(), 'RTX 3080')]"))
-            EC.presence_of_all_elements_located(
-            (By.CSS_SELECTOR, "div.s-main-slot div.s-result-item"))
+        response = requests.post(
+            "https://api.brightdata.com/request",
+            json=data,
+            headers=headers
         )
 
-        time.sleep(5)
+        print("Response status:", response.status_code)
+        response.raise_for_status()
+        #print("Response Text: ", response.text)
 
-        #element_list = driver.find_elements(By.CSS_SELECTOR, "div.data-asin")
+        html = response.text
+        print("HTML length:", len(html))
+        print(html[:1000])  # Preview first 1000 characters for debug
+        return html
 
-        time.sleep(10)
+    except requests.exceptions.HTTPError:
+        print("HTTP error response:", response.text)
+        raise
+    except requests.exceptions.RequestException as e:
+        print(f"Request exception: {e}")
+        raise
 
-        #return element_list
-    
-        #for index, element in enumerate(element_list):
-            #print(f"Element {index + 1} text: {element.text}")
-            #print(f"Element {index + 1} HTML: {element.get_attribute('outerHTML')}")
+def scrape_amazon(search_term: str = "mechanical keyboard"):
+    search_url = f"https://www.amazon.com/s?k={search_term.replace(' ', '+')}"
+    html = scrape_with_web_unlocker(search_url)
+    soup = BeautifulSoup(html, "html.parser")
 
-        return element_list
-    
-    finally:
-        time.sleep(10)
-        #driver.quit()
-        
+    product_elements = soup.select("div.s-result-item[data-component-type='s-search-result']")
+    print("Found products:", len(product_elements))
+    if not product_elements:
+        print("⚠️ No products found — page structure may have changed or search returned no results.")
 
-#driver = create_webdriver()
-#scrape_amazon(driver)
-
-    #product_item = driver.find_element(By.XPATH, "//div[@class='s-main-slot s-result-list s-search-results sg-row']//*[contains(text(), 'RTX 3080')]")
-    #product_item = driver.find_element(By.XPATH, "//*[contains(text(), 'RTX 3080')]")
-    #product_item.click()
-
-    #Testing Purposes
-    #print("Element text:", product_item.text)
-    #print("Element HTML:", product_item.get_attribute('outerHTML'))
-
-    #for index, element in enumerate(element_list):
-        #print(f"Element {index + 1} text: {element.text}")
-        #print(f"Element {index + 1} HTML: {element.get_attribute('outerHTML')}")
+    return product_elements
