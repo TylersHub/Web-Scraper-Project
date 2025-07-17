@@ -11,14 +11,20 @@ import { useNotifications } from "@/components/notification-provider";
 import { generateMockProducts } from "@/lib/mock-data";
 import { updateSearchResults } from "@/lib/store";
 
-export function SearchForm() {
-  const [query, setQuery] = useState("headphones");
+interface Props {
+  onSearch: (query: string) => void; // pass search term back to parent
+}
+
+export function SearchForm({ onSearch }: Props) {
+  const [query, setQuery] = useState("");
   const [isLoading, setIsLoading] = useState(false);
   const { addNotification } = useNotifications();
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-
+    if (query.trim()) {
+      onSearch(query);
+    }
     if (!query.trim()) {
       addNotification({
         title: "Please enter a search query",
@@ -33,16 +39,17 @@ export function SearchForm() {
       // Add a small delay to simulate network request
       await new Promise((resolve) => setTimeout(resolve, 800));
 
-      // Generate mock products on the client side
-      const mockProducts = generateMockProducts(query);
-      console.log("Generated mock products:", mockProducts);
+      // // Generate mock products on the client side
+      // const mockProducts = generateMockProducts(query);
+      // console.log("Generated mock products:", mockProducts);
 
-      // Update the store with the results
-      updateSearchResults(mockProducts);
+      // // Update the store with the results
+      // updateSearchResults(mockProducts);
 
       addNotification({
         title: "Search completed",
-        description: `Found ${mockProducts.length} products`,
+        // description: `Found ${mockProducts.length} products`,
+        description: `Found x products`,
         type: "success",
       });
     } catch (error) {

@@ -1,80 +1,125 @@
-"use client"
+"use client";
 
-import { useState, useEffect } from "react"
-import { ExternalLink, Star, ArrowUpDown, Award, ThumbsUp } from "lucide-react"
-import { Button } from "../components/ui/button"
-import { Card, CardContent, CardFooter } from "../components/ui/card"
+import { useState, useEffect } from "react";
+import { ExternalLink, Star, ArrowUpDown, Award, ThumbsUp } from "lucide-react";
+import { Button } from "../components/ui/button";
+import { Card, CardContent, CardFooter } from "../components/ui/card";
 import {
   DropdownMenu,
   DropdownMenuContent,
   DropdownMenuRadioGroup,
   DropdownMenuRadioItem,
   DropdownMenuTrigger,
-} from "../components/ui/dropdown-menu"
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "../components/ui/tabs"
-import { Badge } from "../components/ui/badge"
-import { Checkbox } from "../components/ui/checkbox"
-import { Label } from "../components/ui/label"
-import { getSearchResults } from "../lib/store"
-import type { Product } from "../lib/types"
+} from "../components/ui/dropdown-menu";
+import {
+  Tabs,
+  TabsContent,
+  TabsList,
+  TabsTrigger,
+} from "../components/ui/tabs";
+import { Badge } from "../components/ui/badge";
+import { Checkbox } from "../components/ui/checkbox";
+import { Label } from "../components/ui/label";
+import { getSearchResults } from "../lib/store";
+import type { Product } from "../lib/types";
 
-export function ProductResults() {
-  const [products, setProducts] = useState<Product[]>([])
-  const [sortBy, setSortBy] = useState<string>("price-asc")
-  const [activeTab, setActiveTab] = useState<string>("all")
-  const [showBestPrice, setShowBestPrice] = useState<boolean>(false)
-  const [showBestRated, setShowBestRated] = useState<boolean>(false)
+interface Product_Extra {
+  title: string;
+  price: number;
+  rating: number;
+  reviewCount: number;
+  url: string;
+  imageUrl?: string;
+  source: string;
+  isBestPrice?: boolean;
+  isBestRated?: boolean;
+}
+
+interface Props {
+  show: boolean;
+  reloadKey: number;
+}
+
+export function ProductResults({ show, reloadKey }: Props) {
+  const [products, setProducts] = useState<Product[]>([]);
+  const [sortBy, setSortBy] = useState<string>("price-asc");
+  const [activeTab, setActiveTab] = useState<string>("all");
+  const [showBestPrice, setShowBestPrice] = useState<boolean>(false);
+  const [showBestRated, setShowBestRated] = useState<boolean>(false);
+
+  const fetchData = () => {
+    //setLoading(true);
+    fetch("http://localhost:5000/api/data")
+      .then((response) => response.json())
+      .then((products) => setProducts(products))
+      .catch((error) => console.error("Error fetching data:", error));
+    //.finally(() => setLoading(false));
+  };
 
   useEffect(() => {
-    console.log("Setting up store subscription")
-    // Subscribe to search results updates
-    const unsubscribe = getSearchResults((results) => {
-      console.log("Received updated results:", results.length, "products")
-      setProducts(results)
-    })
+    fetchData(); // fetch results whenever reloadKey changes
+  }, [reloadKey]);
 
-    return () => {
-      console.log("Cleaning up store subscription")
-      unsubscribe()
-    }
-  }, [])
+  // useEffect(() => {
+  //   console.log("Setting up store subscription")
+  //   // Subscribe to search results updates
+  //   const unsubscribe = getSearchResults((results) => {
+  //     console.log("Received updated results:", results.length, "products")
+  //     setProducts(results)
+  //   })
+
+  //   return () => {
+  //     console.log("Cleaning up store subscription")
+  //     unsubscribe()
+  //   }
+  // }, [])
 
   const sortedProducts = [...products].sort((a, b) => {
     switch (sortBy) {
       case "price-asc":
-        return a.price - b.price
+        return Number(a.price) - Number(b.price);
       case "price-desc":
-        return b.price - a.price
-      case "rating-desc":
-        return b.rating - a.rating || b.reviewCount - a.reviewCount
-      case "reviews-desc":
-        return b.reviewCount - a.reviewCount
+        return Number(b.price) - Number(a.price);
+      // case "rating-desc":
+      //   return b.rating - a.rating || b.reviewCount - a.reviewCount;
+      // case "reviews-desc":
+      //   return b.reviewCount - a.reviewCount;
       default:
-        return a.price - b.price
+        return Number(a.price) - Number(b.price);
     }
-  })
+  });
 
   // Apply filters for best price and best rated
   let filteredProducts =
-    activeTab === "all" ? sortedProducts : sortedProducts.filter((product) => product.source === activeTab)
+    activeTab === "all"
+      ? sortedProducts
+      : sortedProducts.filter((product) => product.source === activeTab);
 
   if (showBestPrice) {
-    filteredProducts = filteredProducts.filter((product) => product.isBestPrice)
+    filteredProducts = filteredProducts.filter(
+      (product) => product.isBestPrice
+    );
   }
 
   if (showBestRated) {
-    filteredProducts = filteredProducts.filter((product) => product.isBestRated)
+    filteredProducts = filteredProducts.filter(
+      (product) => product.isBestRated
+    );
   }
 
-  const sources = [...new Set(products.map((product) => product.source))]
+  const sources = [...new Set(products.map((product) => product.source))];
 
   if (products.length === 0) {
     return (
       <div className="text-center py-12">
-        <p className="text-muted-foreground">Search for a product to see results here</p>
+        <p className="text-muted-foreground">
+          Search for a product to see results here
+        </p>
       </div>
-    )
+    );
   }
+
+  if (!show) return null;
 
   return (
     <div className="space-y-4">
@@ -115,10 +160,18 @@ export function ProductResults() {
             </DropdownMenuTrigger>
             <DropdownMenuContent align="end" className="w-[200px]">
               <DropdownMenuRadioGroup value={sortBy} onValueChange={setSortBy}>
-                <DropdownMenuRadioItem value="price-asc">Price: Low to High</DropdownMenuRadioItem>
-                <DropdownMenuRadioItem value="price-desc">Price: High to Low</DropdownMenuRadioItem>
-                <DropdownMenuRadioItem value="rating-desc">Highest Rating</DropdownMenuRadioItem>
-                <DropdownMenuRadioItem value="reviews-desc">Most Reviews</DropdownMenuRadioItem>
+                <DropdownMenuRadioItem value="price-asc">
+                  Price: Low to High
+                </DropdownMenuRadioItem>
+                <DropdownMenuRadioItem value="price-desc">
+                  Price: High to Low
+                </DropdownMenuRadioItem>
+                <DropdownMenuRadioItem value="rating-desc">
+                  Highest Rating
+                </DropdownMenuRadioItem>
+                <DropdownMenuRadioItem value="reviews-desc">
+                  Most Reviews
+                </DropdownMenuRadioItem>
               </DropdownMenuRadioGroup>
             </DropdownMenuContent>
           </DropdownMenu>
@@ -138,18 +191,21 @@ export function ProductResults() {
         <TabsContent value={activeTab} className="mt-4">
           {filteredProducts.length === 0 ? (
             <div className="text-center py-12">
-              <p className="text-muted-foreground">No products match the current filters</p>
+              <p className="text-muted-foreground">
+                No products match the current filters
+              </p>
             </div>
           ) : (
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
               {filteredProducts.map((product, index) => (
                 <Card key={index} className="overflow-hidden">
                   <div className="aspect-square relative bg-muted">
-                    {product.imageUrl ? (
+                    {product.image ? (
                       <img
-                        src={product.imageUrl || "/placeholder.svg"}
-                        alt={product.title}
+                        src={product.image || "/placeholder.svg"}
+                        alt={product.name}
                         className="object-cover w-full h-full"
+                        
                       />
                     ) : (
                       <div className="flex items-center justify-center h-full text-muted-foreground">
@@ -187,7 +243,9 @@ export function ProductResults() {
                     )}
                   </div>
                   <CardContent className="p-4">
-                    <h3 className="font-medium line-clamp-2 h-12">{product.title}</h3>
+                    <h3 className="font-medium line-clamp-2 h-12">
+                      {product.name}
+                    </h3>
                     <div className="mt-2 flex items-center gap-2">
                       <div className="flex">
                         {Array.from({ length: 5 }).map((_, i) => (
@@ -197,21 +255,29 @@ export function ProductResults() {
                               i < Math.floor(product.rating)
                                 ? "fill-amber-400 text-amber-400"
                                 : i < product.rating
-                                  ? "fill-amber-400 text-amber-400 fill-half"
-                                  : "fill-muted text-muted-foreground"
+                                ? "fill-amber-400 text-amber-400 fill-half"
+                                : "fill-muted text-muted-foreground"
                             }`}
                           />
                         ))}
                       </div>
                       <span className="text-sm text-muted-foreground">
-                        {product.rating.toFixed(1)} ({product.reviewCount})
+                        {Number(product.rating).toFixed(1)} (
+                        {product.reviewCount})
                       </span>
                     </div>
-                    <div className="mt-2 text-lg font-bold">${product.price.toFixed(2)}</div>
+                    <div className="mt-2 text-lg font-bold">
+                      {product.price}
+                    </div>
                   </CardContent>
                   <CardFooter className="p-4 pt-0">
                     <Button asChild variant="outline" className="w-full">
-                      <a href={product.url} target="_blank" rel="noopener noreferrer" className="flex items-center">
+                      <a
+                        href={product.url}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="flex items-center"
+                      >
                         View Product
                         <ExternalLink className="ml-2 h-4 w-4" />
                       </a>
@@ -224,5 +290,5 @@ export function ProductResults() {
         </TabsContent>
       </Tabs>
     </div>
-  )
+  );
 }

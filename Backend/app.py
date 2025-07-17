@@ -1,9 +1,13 @@
+#from flask import Flask, render_template
 from flask import Flask, jsonify, request
 from flask_sqlalchemy import SQLAlchemy
 from flask_cors import CORS
 from scraper import scrape_amazon  # Now uses Bright Data
 
+import re #Uses Regular Expressions (In this case removing part of urls)
+
 app = Flask(__name__)
+#app = Flask(__name__, static_folder="static", template_folder="templates")
 CORS(app)
 #app.config["SQLALCHEMY_DATABASE_URI"] = "sqlite:///:memory:"
 app.config["SQLALCHEMY_DATABASE_URI"] = "sqlite:///products.db"
@@ -39,7 +43,15 @@ def scrape_and_save_data(search_query=None):
             url = f"https://www.amazon.com{url_el['href']}" if url_el and url_el.has_attr("href") else "No URL available"
 
             image_el = element.select_one("img.s-image")
-            image = image_el["src"] if image_el and image_el.has_attr("src") else "No image available"
+            if image_el and image_el.has_attr("src"):
+                raw_src = image_el["src"]
+                # Remove modifiers like _AC_UY218_ or _SL500_ from url for best image quality
+                #clean_src = re.sub(r'\._[^.]+(?=\.)', '', raw_src)
+                clean_src = re.sub(r'\._[^.]+\.', '.', raw_src) # Best Regular Expression for cleaning image url for highest quality images
+                image = clean_src
+            else:
+                image = "No image available"
+
 
             price_el = element.select_one("span.a-offscreen")
             price = price_el.text if price_el else "Price not available"
@@ -101,6 +113,10 @@ def get_data():
 @app.route('/')
 def home():
     return 'Hello, just a webpage...'
+
+# @app.route("/")
+# def index():
+#     return render_template("index.html")
 
 if __name__ == '__main__':
     with app.app_context():

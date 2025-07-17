@@ -26,6 +26,8 @@ venv/
 instance/
 *.sqlite3
 *.db
+static
+templates
 
 # --- IDE & Editor ---
 .vscode/
