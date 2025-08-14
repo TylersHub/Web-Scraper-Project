@@ -47,9 +47,12 @@ export function ProductResults({ show, reloadKey }: Props) {
   const [showBestPrice, setShowBestPrice] = useState<boolean>(false);
   const [showBestRated, setShowBestRated] = useState<boolean>(false);
 
+  const BASE_URL = import.meta.env.VITE_BACKEND_URL;
+
   const fetchData = () => {
     //setLoading(true);
-    fetch("http://localhost:5000/api/data")
+    fetch(`${BASE_URL}/api/data`)
+      // fetch("http://localhost:5000/api/data")
       .then((response) => response.json())
       .then((products) => setProducts(products))
       .catch((error) => console.error("Error fetching data:", error));
@@ -205,7 +208,6 @@ export function ProductResults({ show, reloadKey }: Props) {
                         src={product.image || "/placeholder.svg"}
                         alt={product.name}
                         className="object-cover w-full h-full"
-                        
                       />
                     ) : (
                       <div className="flex items-center justify-center h-full text-muted-foreground">

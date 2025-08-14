@@ -11,9 +11,12 @@ export default function App() {
   const [loading, setLoading] = useState(false);
   const [reloadKey, setReloadKey] = useState(0);
 
+  const BASE_URL = import.meta.env.VITE_BACKEND_URL;
+
   const searchProducts = (searchTerm: string) => {
     setLoading(true);
-    fetch("http://localhost:5000/api/data", {
+    // fetch("http://localhost:5000/api/data", {
+    fetch(`${BASE_URL}/api/data`, {
       method: "POST",
       headers: {
         "Content-Type": "application/json",
@@ -49,8 +52,8 @@ export default function App() {
                 prices and reviews
               </p>
             </div>
-            <SearchForm onSearch={searchProducts}/>
-            <ProductResults show={showResults} reloadKey={reloadKey}/>
+            <SearchForm onSearch={searchProducts} />
+            <ProductResults show={showResults} reloadKey={reloadKey} />
           </div>
           {/* Theme Toggle Button */}
           <ThemeToggle />
