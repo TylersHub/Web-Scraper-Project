@@ -10,12 +10,16 @@ To run Backend:
 
 From the project root folder, run cd Backend
 
-Then, venv/Scripts/activate
+1. pip install
 
-Then, python app.py
+2. venv/Scripts/activate
+
+3. python app.py
 
 To run Frontend:
 
-From the project root folder, run cd Frontend
+1. npm install
 
-Then, npm run dev
+2. cd Frontend
+
+3. npm run dev
