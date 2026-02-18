@@ -2,24 +2,19 @@
 
 import { useState, useEffect } from "react";
 import { ExternalLink, Star, ArrowUpDown, Award, ThumbsUp } from "lucide-react";
-import { Button } from "../components/ui/button";
-import { Card, CardContent, CardFooter } from "../components/ui/card";
+import { Button } from "./ui/button";
+import { Card, CardContent, CardFooter } from "./ui/card";
 import {
   DropdownMenu,
   DropdownMenuContent,
   DropdownMenuRadioGroup,
   DropdownMenuRadioItem,
   DropdownMenuTrigger,
-} from "../components/ui/dropdown-menu";
-import {
-  Tabs,
-  TabsContent,
-  TabsList,
-  TabsTrigger,
-} from "../components/ui/tabs";
-import { Badge } from "../components/ui/badge";
-import { Checkbox } from "../components/ui/checkbox";
-import { Label } from "../components/ui/label";
+} from "./ui/dropdown-menu";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "./ui/tabs";
+import { Badge } from "./ui/badge";
+import { Checkbox } from "./ui/checkbox";
+import { Label } from "./ui/label";
 import { getSearchResults } from "../lib/store";
 import type { Product } from "../lib/types";
 
@@ -108,13 +103,13 @@ export function ProductResults({
 
   if (showBestPrice) {
     filteredProducts = filteredProducts.filter(
-      (product) => product.isBestPrice
+      (product) => product.isBestPrice,
     );
   }
 
   if (showBestRated) {
     filteredProducts = filteredProducts.filter(
-      (product) => product.isBestRated
+      (product) => product.isBestRated,
     );
   }
 
@@ -265,8 +260,8 @@ export function ProductResults({
                               i < Math.floor(product.rating)
                                 ? "fill-amber-400 text-amber-400"
                                 : i < product.rating
-                                ? "fill-amber-400 text-amber-400 fill-half"
-                                : "fill-muted text-muted-foreground"
+                                  ? "fill-amber-400 text-amber-400 fill-half"
+                                  : "fill-muted text-muted-foreground"
                             }`}
                           />
                         ))}
