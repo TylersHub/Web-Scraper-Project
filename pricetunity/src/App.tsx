@@ -10,11 +10,13 @@ export default function App() {
   const [showResults, setShowResults] = useState(false);
   const [loading, setLoading] = useState(false);
   const [reloadKey, setReloadKey] = useState(0);
+  const [productCount, setProductCount] = useState(0);
 
   const BASE_URL = import.meta.env.VITE_BACKEND_URL;
 
   const searchProducts = (searchTerm: string) => {
     setLoading(true);
+    // Switch between localhost url and "BASE_URL" for local vs deployed backend
     // fetch("http://localhost:5000/api/data", {
     fetch(`${BASE_URL}/api/data`, {
       method: "POST",
@@ -52,8 +54,12 @@ export default function App() {
                 prices and reviews
               </p>
             </div>
-            <SearchForm onSearch={searchProducts} />
-            <ProductResults show={showResults} reloadKey={reloadKey} />
+            <SearchForm onSearch={searchProducts} productCount={productCount} />
+            <ProductResults
+              show={showResults}
+              reloadKey={reloadKey}
+              onProductCountChange={setProductCount}
+            />
           </div>
           {/* Theme Toggle Button */}
           <ThemeToggle />

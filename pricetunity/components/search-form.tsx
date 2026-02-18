@@ -13,9 +13,10 @@ import { updateSearchResults } from "@/lib/store";
 
 interface Props {
   onSearch: (query: string) => void; // pass search term back to parent
+  productCount: number;
 }
 
-export function SearchForm({ onSearch }: Props) {
+export function SearchForm({ onSearch, productCount}: Props) {
   const [query, setQuery] = useState("");
   const [isLoading, setIsLoading] = useState(false);
   const { addNotification } = useNotifications();
@@ -49,7 +50,7 @@ export function SearchForm({ onSearch }: Props) {
       addNotification({
         title: "Search completed",
         // description: `Found ${mockProducts.length} products`,
-        description: `Found x products`,
+        description: `Found ${productCount} products`,
         type: "success",
       });
     } catch (error) {

@@ -38,9 +38,14 @@ interface Product_Extra {
 interface Props {
   show: boolean;
   reloadKey: number;
+  onProductCountChange: (count: number) => void;
 }
 
-export function ProductResults({ show, reloadKey }: Props) {
+export function ProductResults({
+  show,
+  reloadKey,
+  onProductCountChange,
+}: Props) {
   const [products, setProducts] = useState<Product[]>([]);
   const [sortBy, setSortBy] = useState<string>("price-asc");
   const [activeTab, setActiveTab] = useState<string>("all");
@@ -54,7 +59,10 @@ export function ProductResults({ show, reloadKey }: Props) {
     fetch(`${BASE_URL}/api/data`)
       // fetch("http://localhost:5000/api/data")
       .then((response) => response.json())
-      .then((products) => setProducts(products))
+      .then((products) => {
+        setProducts(products);
+        onProductCountChange(products.length);
+      })
       .catch((error) => console.error("Error fetching data:", error));
     //.finally(() => setLoading(false));
   };
