@@ -47,17 +47,13 @@ export function ProductResults({
   const [showBestPrice, setShowBestPrice] = useState<boolean>(false);
   const [showBestRated, setShowBestRated] = useState<boolean>(false);
 
-  const BASE_URL =
-    process.env.NEXT_PUBLIC_BACKEND_URL ??
-    "https://pricetunity-backend-render.onrender.com";
+  const BASE_URL = process.env.NEXT_PUBLIC_BACKEND_URL;
 
   const fetchData = () => {
-    //setLoading(true);
-    fetch(`${BASE_URL}/api/data`)
-      // fetch("http://localhost:5000/api/data")
+    return fetch(`${BASE_URL}/api/data`, { cache: "no-store" })
       .then((response) => response.json())
       .then((data: Product[]) => {
-        const normalizedProducts: DisplayProduct[] = data.map((product) => ({
+        const normalizedProducts: DisplayProduct[] = (Array.isArray(data) ? data : []).map((product) => ({
           id: product.id,
           name: product.name ?? product.title ?? "Unnamed Product",
           image: product.image ?? product.imageUrl ?? "",
@@ -70,15 +66,41 @@ export function ProductResults({
           isBestRated: Boolean(product.isBestRated),
         }));
 
-        setProducts(normalizedProducts);
-        onProductCountChange(normalizedProducts.length);
-      })
-      .catch((error) => console.error("Error fetching data:", error));
-    //.finally(() => setLoading(false));
+        return normalizedProducts;
+      });
   };
 
   useEffect(() => {
-    fetchData(); // fetch results whenever reloadKey changes
+    let cancelled = false;
+
+    const pollForResults = async () => {
+      const maxAttempts = 10;
+      for (let attempt = 0; attempt < maxAttempts; attempt++) {
+        try {
+          const normalizedProducts = await fetchData();
+
+          if (cancelled) return;
+
+          if (normalizedProducts.length > 0 || attempt === maxAttempts - 1) {
+            setProducts(normalizedProducts);
+            onProductCountChange(normalizedProducts.length);
+            return;
+          }
+        } catch (error) {
+          if (attempt === maxAttempts - 1) {
+            console.error("Error fetching data:", error);
+          }
+        }
+
+        await new Promise((resolve) => setTimeout(resolve, 800));
+      }
+    };
+
+    pollForResults();
+
+    return () => {
+      cancelled = true;
+    };
   }, [reloadKey]);
 
   // useEffect(() => {

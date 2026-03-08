@@ -12,14 +12,13 @@ export default function Page() {
   const [reloadKey, setReloadKey] = useState(0);
   const [productCount, setProductCount] = useState(0);
 
-  const BASE_URL =
-    process.env.NEXT_PUBLIC_BACKEND_URL ??
-    "https://pricetunity-backend-render.onrender.com";
+  const BASE_URL = process.env.NEXT_PUBLIC_BACKEND_URL;
 
   const searchProducts = (searchTerm: string) => {
     setLoading(true);
     fetch(`${BASE_URL}/api/data`, {
       method: "POST",
+      cache: "no-store",
       headers: {
         "Content-Type": "application/json",
       },
@@ -39,10 +38,12 @@ export default function Page() {
     <main className="container mx-auto px-4 py-8">
       <div className="max-w-4xl mx-auto">
         <div className="mb-8 text-center">
-          <h1 className="text-5xl font-bold tracking-tight mb-3">Pricetunity</h1>
+          <h1 className="text-5xl font-bold tracking-tight mb-3">
+            Pricetunity
+          </h1>
           <p className="text-muted-foreground">
-            Search for products across the best websites to find the best prices and
-            reviews
+            Search for products across the best websites to find the best prices
+            and reviews
           </p>
         </div>
         <SearchForm onSearch={searchProducts} productCount={productCount} />
