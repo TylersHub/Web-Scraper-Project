@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useEffect } from "react";
+import Link from "next/link";
 import { ExternalLink, Star, ArrowUpDown, Award, ThumbsUp } from "lucide-react";
 import { Button } from "./ui/button";
 import { Card, CardContent, CardFooter } from "./ui/card";
@@ -29,6 +30,7 @@ interface DisplayProduct {
   source: string;
   isBestPrice: boolean;
   isBestRated: boolean;
+  description?: string;
 }
 
 interface Props {
@@ -70,6 +72,7 @@ export function ProductResults({
           source: product.source ?? "Amazon",
           isBestPrice: Boolean(product.isBestPrice),
           isBestRated: Boolean(product.isBestRated),
+          description: product.description,
         }));
 
         return normalizedProducts;
@@ -359,15 +362,10 @@ export function ProductResults({
                   </CardContent>
                   <CardFooter className="p-4 pt-0">
                     <Button asChild variant="outline" className="w-full">
-                      <a
-                        href={product.url}
-                        target="_blank"
-                        rel="noopener noreferrer"
-                        className="flex items-center"
-                      >
+                      <Link href={product.id ? `/products/${product.id}` : product.url} className="flex items-center">
                         View Product
                         <ExternalLink className="ml-2 h-4 w-4" />
-                      </a>
+                      </Link>
                     </Button>
                   </CardFooter>
                 </Card>

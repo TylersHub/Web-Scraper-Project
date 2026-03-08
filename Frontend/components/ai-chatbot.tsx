@@ -76,6 +76,7 @@ export function AIChatbot({ products, searchQuery }: AIChatbotProps) {
             name: p.name,
             price: p.price,
             url: p.url,
+            description: typeof p.description === "string" ? p.description.slice(0, 600) : undefined,
           })),
           history: messages
             .slice(-10)

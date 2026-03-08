@@ -2,7 +2,7 @@
 from flask import Flask, jsonify, request
 from flask_sqlalchemy import SQLAlchemy
 from flask_cors import CORS
-from scraper import scrape_amazon  # Now uses Bright Data
+from scraper import scrape_amazon, scrape_amazon_product_description  # Now uses Bright Data
 
 import os
 import re #Uses Regular Expressions (In this case removing part of urls)
@@ -28,15 +28,19 @@ class Product(db.Model):
     image = db.Column(db.String(1000))
     url = db.Column(db.String(1000))
     price = db.Column(db.String(1000))
+    description = db.Column(db.Text)
 
-    def __init__(self, name, image, url, price):
+    def __init__(self, name, image, url, price, description="Description not available."):
         self.name = name
         self.image = image
         self.url = url
         self.price = price
+        self.description = description
 
 def scrape_and_save_data(search_query=None):
     elements = scrape_amazon(search_query) if search_query else scrape_amazon()
+    max_description_scrapes = int(os.getenv("MAX_DESCRIPTION_SCRAPES_PER_SEARCH", "3"))
+    description_scrapes = 0
 
     Product.query.delete()
 
@@ -73,21 +77,31 @@ def scrape_and_save_data(search_query=None):
             inserted = False
             for j in range(len(products)):
                 if price_value < products[j]['price_value']:
+                    description = "Description not available."
+                    if description_scrapes < max_description_scrapes:
+                        description = scrape_amazon_product_description(url)
+                        description_scrapes += 1
                     products.insert(j, {
                         'name': name,
                         'url': url,
                         'image': image,
                         'price': price,
+                        'description': description,
                         'price_value': price_value
                     })
                     inserted = True
                     break
             if not inserted:
+                description = "Description not available."
+                if description_scrapes < max_description_scrapes:
+                    description = scrape_amazon_product_description(url)
+                    description_scrapes += 1
                 products.append({
                     'name': name,
                     'url': url,
                     'image': image,
                     'price': price,
+                    'description': description,
                     'price_value': price_value
                 })
 
@@ -95,7 +109,15 @@ def scrape_and_save_data(search_query=None):
             print(f"Error on element {i + 1}: {e}")
 
     for p in products:
-        db.session.add(Product(name=p['name'], image=p['image'], url=p['url'], price=p['price']))
+        db.session.add(
+            Product(
+                name=p['name'],
+                image=p['image'],
+                url=p['url'],
+                price=p['price'],
+                description=p.get('description', 'Description not available.')
+            )
+        )
     db.session.commit()
 
 def sanitize_text(value, max_len=500):
@@ -115,7 +137,8 @@ def sanitize_products(products, max_items=15):
         cleaned.append({
             "name": sanitize_text(product.get("name") or product.get("title") or "Unknown product", 140),
             "price": sanitize_text(product.get("price") or "Unknown price", 30),
-            "url": sanitize_text(product.get("url") or "", 250)
+            "url": sanitize_text(product.get("url") or "", 250),
+            "description": sanitize_text(product.get("description") or "Description not available.", 600)
         })
     return cleaned
 
@@ -181,7 +204,8 @@ def get_gemini_reply(message, products=None, search_query=None, history=None):
         name = product.get("name") or "Unknown product"
         price = product.get("price") or "Unknown price"
         url = product.get("url") or ""
-        product_lines.append(f"{i}. {name} | Price: {price} | URL: {url}")
+        description = product.get("description") or "Description not available."
+        product_lines.append(f"{i}. {name} | Price: {price} | URL: {url} | Description: {description}")
 
     products_block = "\n".join(product_lines) if product_lines else "No product list provided."
     query_block = sanitize_text(search_query or "No recent search query provided.", 140)
@@ -265,9 +289,35 @@ def get_data():
         'name': item.name,
         'image': item.image,
         'url': item.url,
-        'price': item.price
+        'price': item.price,
+        'description': item.description or "Description not available."
     } for item in data]
     return jsonify(result)
+
+
+@app.route('/api/data/<int:product_id>', methods=['GET'])
+def get_product_by_id(product_id):
+    item = Product.query.get(product_id)
+    if not item:
+        return jsonify({'error': 'Product not found'}), 404
+
+    if (not item.description or item.description == "Description not available.") and item.url:
+        try:
+            description = scrape_amazon_product_description(item.url)
+            if description and description != "Description not available.":
+                item.description = description
+                db.session.commit()
+        except Exception as e:
+            print(f"On-demand description scrape failed for {item.url}: {e}")
+
+    return jsonify({
+        'id': item.id,
+        'name': item.name,
+        'image': item.image,
+        'url': item.url,
+        'price': item.price,
+        'description': item.description or "Description not available."
+    })
 
 
 @app.route('/api/chat', methods=['POST'])
@@ -321,6 +371,10 @@ def home():
 
 with app.app_context():
     db.create_all()
+    existing_columns = [col["name"] for col in db.session.execute(db.text("PRAGMA table_info(product)")).mappings()]
+    if "description" not in existing_columns:
+        db.session.execute(db.text("ALTER TABLE product ADD COLUMN description TEXT"))
+        db.session.commit()
 
 if __name__ == '__main__':
     app.run(debug=True, use_reloader=False)

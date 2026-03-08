@@ -11,4 +11,5 @@ export interface Product {
   source?: string;
   isBestPrice?: boolean;
   isBestRated?: boolean;
+  description?: string;
 }
