@@ -1,60 +1,148 @@
-# --- Node.js (React Frontend) ---
+# ===============================
+# Environment Variables / Secrets
+# ===============================
+
+.env
+.env.*
+.env.local
+*.local
+*.pem
+*.key
+*.crt
+*.p12
+*.pfx
+
+
+# ===============================
+# Node.js / React
+# ===============================
 node_modules/
+.pnpm/
+.pnpm-store/
+.pnpm-debug.log*
+
+# Next.js / React builds
+.next/
+out/
+
+
+# ===============================
+# Python / Flask
+# ===============================
+
+**pycache**/
+*.py[cod]
+*.pyo
+*.pyd
+*.pyc
+venv/
+.venv/
+env/
+ENV/
+instance/
+
+
+# ===============================
+# Databases
+# ===============================
+
+*.sqlite3
+*.db
+products.db
+
+
+# ===============================
+# Build Outputs
+# ===============================
+
 dist/
 dist-ssr/
 build/
-*.log
-*.local
-.env
-.env.local
-.env.*
+coverage/
 
-# --- Logs ---
+
+# ===============================
+# Logs
+# ===============================
+
 logs/
 *.log
+*.log*
 npm-debug.log*
 yarn-debug.log*
 yarn-error.log*
 pnpm-debug.log*
 lerna-debug.log*
+chromedriver.log
 
-# --- Python (Flask Backend) ---
-__pycache__/
-*.py[cod]
-*.pyo
-*.pyd
-venv/
-instance/
-*.sqlite3
-*.db
-static
-templates
 
-# --- IDE & Editor ---
+# ===============================
+# Scraped Data / Generated Data
+# ===============================
+
+scraped_output.json
+scraped_data/
+
+
+# ===============================
+# Testing / Coverage
+# ===============================
+
+coverage/
+.nyc_output/
+pytest_cache/
+.tox/
+coverage.xml
+*.cover
+*.py,cover
+.hypothesis/
+
+
+# ===============================
+# IDE / Editor
+# ===============================
+
 .vscode/
 !.vscode/extensions.json
 .idea/
-.DS_Store
 *.suo
 *.ntvs*
 *.njsproj
 *.sln
 *.sw?
+*.swp
 
-# --- Misc ---
-*.bak
-*.tmp
-*.orig
-*.log
 
-# --- OS Specific ---
+# ===============================
+# OS Files
+# ===============================
+
+.DS_Store
 Thumbs.db
 ehthumbs.db
 desktop.ini
 
-# --- Database ---
-products.db
 
-# --- Scraped data (if saved to file) ---
-scraped_output.json
-scraped_data/
+# ===============================
+# Temporary / Backup Files
+# ===============================
+
+*.bak
+*.tmp
+*.orig
+
+
+# ===============================
+# Docker
+# ===============================
+
+docker-compose.override.yml
+*.env.docker
+.docker/
+
+
+# ===============================
+# Flask Generated Files (optional)
+# ===============================
+static/
+templates/
