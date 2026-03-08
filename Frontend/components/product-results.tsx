@@ -362,7 +362,19 @@ export function ProductResults({
                   </CardContent>
                   <CardFooter className="p-4 pt-0">
                     <Button asChild variant="outline" className="w-full">
-                      <Link href={product.id ? `/products/${product.id}` : product.url} className="flex items-center">
+                      <Link
+                        href={{
+                          pathname: `/products/${product.id ?? "external"}`,
+                          query: {
+                            name: product.name,
+                            image: product.image,
+                            url: product.url,
+                            price: String(product.price),
+                            description: product.description ?? "",
+                          },
+                        }}
+                        className="flex items-center"
+                      >
                         View Product
                         <ExternalLink className="ml-2 h-4 w-4" />
                       </Link>

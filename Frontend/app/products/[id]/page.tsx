@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from "react";
 import Link from "next/link";
-import { useParams } from "next/navigation";
+import { useParams, useSearchParams } from "next/navigation";
 import { Button } from "@/components/ui/button";
 
 interface ProductDetail {
@@ -50,16 +50,28 @@ async function loadProduct(baseUrl: string, id: string): Promise<ProductDetail |
 
 export default function ProductDetailsPage() {
   const params = useParams<{ id: string }>();
+  const searchParams = useSearchParams();
   const [product, setProduct] = useState<ProductDetail | null>(null);
   const [isLoading, setIsLoading] = useState(true);
 
   const BASE_URL = process.env.NEXT_PUBLIC_BACKEND_URL;
   const id = params?.id;
+  const fallbackProduct: ProductDetail | null =
+    searchParams.get("url") && searchParams.get("name")
+      ? {
+          id: 0,
+          name: searchParams.get("name") || "Unnamed Product",
+          image: searchParams.get("image") || "",
+          url: searchParams.get("url") || "",
+          price: searchParams.get("price") || "Price not available",
+          description: searchParams.get("description") || "Couldn't load description.",
+        }
+      : null;
 
   useEffect(() => {
     let cancelled = false;
 
-    if (!id || !BASE_URL) {
+    if (!id || !BASE_URL || id === "external") {
       setIsLoading(false);
       return;
     }
@@ -95,6 +107,46 @@ export default function ProductDetailsPage() {
   }
 
   if (!product) {
+    if (fallbackProduct) {
+      return (
+        <main className="container mx-auto px-4 py-8">
+          <div className="max-w-4xl mx-auto space-y-6">
+            <Link href="/" className="text-sm underline underline-offset-4">
+              Back to search
+            </Link>
+
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-6 items-start">
+              <div className="rounded-lg border bg-muted/30 overflow-hidden">
+                {fallbackProduct.image ? (
+                  // eslint-disable-next-line @next/next/no-img-element
+                  <img
+                    src={fallbackProduct.image}
+                    alt={fallbackProduct.name}
+                    className="w-full h-full object-cover"
+                  />
+                ) : (
+                  <div className="p-8 text-muted-foreground">No image available</div>
+                )}
+              </div>
+
+              <div className="space-y-4">
+                <h1 className="text-2xl font-bold">{fallbackProduct.name}</h1>
+                <p className="text-xl font-semibold">{fallbackProduct.price}</p>
+                <p className="text-sm leading-6 text-muted-foreground whitespace-pre-wrap">
+                  {fallbackProduct.description || "Couldn't load description."}
+                </p>
+                <Button asChild>
+                  <a href={fallbackProduct.url} target="_blank" rel="noopener noreferrer">
+                    Open on Store
+                  </a>
+                </Button>
+              </div>
+            </div>
+          </div>
+        </main>
+      );
+    }
+
     return (
       <main className="container mx-auto px-4 py-8">
         <div className="max-w-2xl mx-auto space-y-4">
