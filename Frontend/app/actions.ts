@@ -97,7 +97,9 @@ async function generateMockProducts(query: string): Promise<Product[]> {
 
     // Find product with highest rating (and if tied, highest review count)
     const bestRated = products.reduce((prev, current) =>
-      current.rating > prev.rating || (current.rating === prev.rating && current.reviewCount > prev.reviewCount)
+      (current.rating ?? 0) > (prev.rating ?? 0) ||
+      ((current.rating ?? 0) === (prev.rating ?? 0) &&
+        (current.reviewCount ?? 0) > (prev.reviewCount ?? 0))
         ? current
         : prev,
     )

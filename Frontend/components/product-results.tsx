@@ -15,19 +15,19 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "./ui/tabs";
 import { Badge } from "./ui/badge";
 import { Checkbox } from "./ui/checkbox";
 import { Label } from "./ui/label";
-import { getSearchResults } from "../lib/store";
 import type { Product } from "../lib/types";
 
-interface Product_Extra {
-  title: string;
-  price: number;
+interface DisplayProduct {
+  id?: number;
+  name: string;
+  image: string;
+  url: string;
+  price: string | number;
   rating: number;
   reviewCount: number;
-  url: string;
-  imageUrl?: string;
   source: string;
-  isBestPrice?: boolean;
-  isBestRated?: boolean;
+  isBestPrice: boolean;
+  isBestRated: boolean;
 }
 
 interface Props {
@@ -41,22 +41,37 @@ export function ProductResults({
   reloadKey,
   onProductCountChange,
 }: Props) {
-  const [products, setProducts] = useState<Product[]>([]);
+  const [products, setProducts] = useState<DisplayProduct[]>([]);
   const [sortBy, setSortBy] = useState<string>("price-asc");
   const [activeTab, setActiveTab] = useState<string>("all");
   const [showBestPrice, setShowBestPrice] = useState<boolean>(false);
   const [showBestRated, setShowBestRated] = useState<boolean>(false);
 
-  const BASE_URL = import.meta.env.VITE_BACKEND_URL;
+  const BASE_URL =
+    process.env.NEXT_PUBLIC_BACKEND_URL ??
+    "https://pricetunity-backend-render.onrender.com";
 
   const fetchData = () => {
     //setLoading(true);
     fetch(`${BASE_URL}/api/data`)
       // fetch("http://localhost:5000/api/data")
       .then((response) => response.json())
-      .then((products) => {
-        setProducts(products);
-        onProductCountChange(products.length);
+      .then((data: Product[]) => {
+        const normalizedProducts: DisplayProduct[] = data.map((product) => ({
+          id: product.id,
+          name: product.name ?? product.title ?? "Unnamed Product",
+          image: product.image ?? product.imageUrl ?? "",
+          url: product.url,
+          price: product.price,
+          rating: product.rating ?? 0,
+          reviewCount: product.reviewCount ?? 0,
+          source: product.source ?? "Amazon",
+          isBestPrice: Boolean(product.isBestPrice),
+          isBestRated: Boolean(product.isBestRated),
+        }));
+
+        setProducts(normalizedProducts);
+        onProductCountChange(normalizedProducts.length);
       })
       .catch((error) => console.error("Error fetching data:", error));
     //.finally(() => setLoading(false));
@@ -80,18 +95,23 @@ export function ProductResults({
   //   }
   // }, [])
 
+  const toPriceNumber = (price: string | number) =>
+    typeof price === "number"
+      ? price
+      : Number(price.replace(/[^0-9.]/g, "")) || 0;
+
   const sortedProducts = [...products].sort((a, b) => {
     switch (sortBy) {
       case "price-asc":
-        return Number(a.price) - Number(b.price);
+        return toPriceNumber(a.price) - toPriceNumber(b.price);
       case "price-desc":
-        return Number(b.price) - Number(a.price);
+        return toPriceNumber(b.price) - toPriceNumber(a.price);
       // case "rating-desc":
       //   return b.rating - a.rating || b.reviewCount - a.reviewCount;
       // case "reviews-desc":
       //   return b.reviewCount - a.reviewCount;
       default:
-        return Number(a.price) - Number(b.price);
+        return toPriceNumber(a.price) - toPriceNumber(b.price);
     }
   });
 

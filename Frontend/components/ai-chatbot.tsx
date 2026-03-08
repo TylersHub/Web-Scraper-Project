@@ -170,7 +170,6 @@ export function AIChatbot() {
                 onChange={(e) => setInputValue(e.target.value)}
                 onKeyPress={handleKeyPress}
                 className="flex-1 text-sm"
-                size="sm"
               />
               <Button onClick={handleSendMessage} size="sm">
                 <Send className="h-3 w-3" />

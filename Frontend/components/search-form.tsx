@@ -8,15 +8,13 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { useNotifications } from "@/components/notification-provider";
-import { generateMockProducts } from "@/lib/mock-data";
-import { updateSearchResults } from "@/lib/store";
 
 interface Props {
   onSearch: (query: string) => void; // pass search term back to parent
   productCount: number;
 }
 
-export function SearchForm({ onSearch, productCount}: Props) {
+export function SearchForm({ onSearch, productCount }: Props) {
   const [query, setQuery] = useState("");
   const [isLoading, setIsLoading] = useState(false);
   const { addNotification } = useNotifications();

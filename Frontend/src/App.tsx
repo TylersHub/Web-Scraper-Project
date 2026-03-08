@@ -12,7 +12,9 @@ export default function App() {
   const [reloadKey, setReloadKey] = useState(0);
   const [productCount, setProductCount] = useState(0);
 
-  const BASE_URL = import.meta.env.VITE_BACKEND_URL;
+  const BASE_URL =
+    process.env.NEXT_PUBLIC_BACKEND_URL ??
+    "https://pricetunity-backend-render.onrender.com";
 
   const searchProducts = (searchTerm: string) => {
     setLoading(true);
