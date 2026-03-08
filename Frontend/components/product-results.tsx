@@ -15,6 +15,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "./ui/tabs";
 import { Badge } from "./ui/badge";
 import { Checkbox } from "./ui/checkbox";
 import { Label } from "./ui/label";
+import { Skeleton } from "./ui/skeleton";
 import type { Product } from "../lib/types";
 
 interface DisplayProduct {
@@ -32,16 +33,19 @@ interface DisplayProduct {
 
 interface Props {
   show: boolean;
+  isSearching: boolean;
   reloadKey: number;
   onProductCountChange: (count: number) => void;
 }
 
 export function ProductResults({
   show,
+  isSearching,
   reloadKey,
   onProductCountChange,
 }: Props) {
   const [products, setProducts] = useState<DisplayProduct[]>([]);
+  const [isFetching, setIsFetching] = useState(false);
   const [sortBy, setSortBy] = useState<string>("price-asc");
   const [activeTab, setActiveTab] = useState<string>("all");
   const [showBestPrice, setShowBestPrice] = useState<boolean>(false);
@@ -72,6 +76,7 @@ export function ProductResults({
 
   useEffect(() => {
     let cancelled = false;
+    setIsFetching(true);
 
     const pollForResults = async () => {
       const maxAttempts = 10;
@@ -84,11 +89,13 @@ export function ProductResults({
           if (normalizedProducts.length > 0 || attempt === maxAttempts - 1) {
             setProducts(normalizedProducts);
             onProductCountChange(normalizedProducts.length);
+            setIsFetching(false);
             return;
           }
         } catch (error) {
           if (attempt === maxAttempts - 1) {
             console.error("Error fetching data:", error);
+            setIsFetching(false);
           }
         }
 
@@ -157,7 +164,7 @@ export function ProductResults({
 
   const sources = [...new Set(products.map((product) => product.source))];
 
-  if (products.length === 0) {
+  if (!show) {
     return (
       <div className="text-center py-12">
         <p className="text-muted-foreground">
@@ -167,7 +174,35 @@ export function ProductResults({
     );
   }
 
-  if (!show) return null;
+  if (isSearching || isFetching) {
+    return (
+      <div className="space-y-4">
+        <h2 className="text-xl font-semibold">Results</h2>
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+          {Array.from({ length: 6 }).map((_, index) => (
+            <Card key={index} className="overflow-hidden">
+              <Skeleton className="aspect-square w-full" />
+              <CardContent className="p-4 space-y-3">
+                <Skeleton className="h-4 w-full" />
+                <Skeleton className="h-4 w-4/5" />
+                <Skeleton className="h-4 w-1/3" />
+              </CardContent>
+            </Card>
+          ))}
+        </div>
+      </div>
+    );
+  }
+
+  if (products.length === 0) {
+    return (
+      <div className="text-center py-12">
+        <p className="text-muted-foreground">
+          No products found for this search yet. Try another search term.
+        </p>
+      </div>
+    );
+  }
 
   return (
     <div className="space-y-4">

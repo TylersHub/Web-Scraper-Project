@@ -15,6 +15,7 @@ export default function Page() {
   const BASE_URL = process.env.NEXT_PUBLIC_BACKEND_URL;
 
   const searchProducts = (searchTerm: string) => {
+    setShowResults(true);
     setLoading(true);
     fetch(`${BASE_URL}/api/data`, {
       method: "POST",
@@ -27,7 +28,6 @@ export default function Page() {
       .then((res) => res.json())
       .then(() => {
         console.log(`Scraping started for: ${searchTerm}`);
-        setShowResults(true);
         setReloadKey((prev) => prev + 1);
       })
       .catch((error) => console.error("Error scraping:", error))
@@ -49,6 +49,7 @@ export default function Page() {
         <SearchForm onSearch={searchProducts} productCount={productCount} />
         <ProductResults
           show={showResults}
+          isSearching={loading}
           reloadKey={reloadKey}
           onProductCountChange={setProductCount}
         />
