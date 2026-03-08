@@ -36,6 +36,7 @@ interface Props {
   isSearching: boolean;
   reloadKey: number;
   onProductCountChange: (count: number) => void;
+  onProductsChange?: (products: Product[]) => void;
 }
 
 export function ProductResults({
@@ -43,6 +44,7 @@ export function ProductResults({
   isSearching,
   reloadKey,
   onProductCountChange,
+  onProductsChange,
 }: Props) {
   const [products, setProducts] = useState<DisplayProduct[]>([]);
   const [isFetching, setIsFetching] = useState(false);
@@ -89,6 +91,9 @@ export function ProductResults({
           if (normalizedProducts.length > 0 || attempt === maxAttempts - 1) {
             setProducts(normalizedProducts);
             onProductCountChange(normalizedProducts.length);
+            if (onProductsChange) {
+              onProductsChange(normalizedProducts);
+            }
             setIsFetching(false);
             return;
           }

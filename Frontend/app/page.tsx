@@ -5,18 +5,22 @@ import { SearchForm } from "@/components/search-form";
 import { ProductResults } from "@/components/product-results";
 import { AIChatbot } from "@/components/ai-chatbot";
 import { ThemeToggle } from "@/components/theme-toggle";
+import type { Product } from "@/lib/types";
 
 export default function Page() {
   const [showResults, setShowResults] = useState(false);
   const [loading, setLoading] = useState(false);
   const [reloadKey, setReloadKey] = useState(0);
   const [productCount, setProductCount] = useState(0);
+  const [searchQuery, setSearchQuery] = useState("");
+  const [products, setProducts] = useState<Product[]>([]);
 
   const BASE_URL = process.env.NEXT_PUBLIC_BACKEND_URL;
 
   const searchProducts = (searchTerm: string) => {
     setShowResults(true);
     setLoading(true);
+    setSearchQuery(searchTerm);
     fetch(`${BASE_URL}/api/data`, {
       method: "POST",
       cache: "no-store",
@@ -52,10 +56,11 @@ export default function Page() {
           isSearching={loading}
           reloadKey={reloadKey}
           onProductCountChange={setProductCount}
+          onProductsChange={setProducts}
         />
       </div>
       <ThemeToggle />
-      <AIChatbot />
+      <AIChatbot products={products} searchQuery={searchQuery} />
     </main>
   );
 }

@@ -7,8 +7,8 @@ import { Send, Bot, User, MessageCircle, X } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Card, CardContent, CardFooter, CardHeader, CardTitle } from "@/components/ui/card"
-import { ScrollArea } from "@/components/ui/scroll-area"
 import { Avatar, AvatarFallback } from "@/components/ui/avatar"
+import type { Product } from "@/lib/types"
 
 interface Message {
   id: string
@@ -17,7 +17,17 @@ interface Message {
   timestamp: Date
 }
 
-export function AIChatbot() {
+interface ChatHistoryItem {
+  role: "user" | "assistant"
+  content: string
+}
+
+interface AIChatbotProps {
+  products: Product[]
+  searchQuery: string
+}
+
+export function AIChatbot({ products, searchQuery }: AIChatbotProps) {
   const [messages, setMessages] = useState<Message[]>([
     {
       id: "1",
@@ -29,72 +39,81 @@ export function AIChatbot() {
   ])
   const [inputValue, setInputValue] = useState("")
   const [isOpen, setIsOpen] = useState(false)
+  const [isSending, setIsSending] = useState(false)
 
-  const generateBotResponse = (userMessage: string): string => {
-    const lowerMessage = userMessage.toLowerCase()
+  const BASE_URL = process.env.NEXT_PUBLIC_BACKEND_URL
 
-    if (lowerMessage.includes("price") || lowerMessage.includes("cheap") || lowerMessage.includes("deal")) {
-      return "I can help you find the best prices! Try searching for a product above, and I'll show you options sorted by price. Look for the 'Best Price' badge on the cheapest items."
-    }
-
-    if (lowerMessage.includes("review") || lowerMessage.includes("rating") || lowerMessage.includes("quality")) {
-      return "For the best reviews, I recommend looking at products with high ratings and many reviews. Use the 'Best Reviews' filter to see top-rated items, and check the star ratings and review counts."
-    }
-
-    if (lowerMessage.includes("headphones") || lowerMessage.includes("audio")) {
-      return "Great choice! Headphones are popular. When comparing, consider: sound quality (check reviews), comfort (important for long use), battery life (for wireless), and price. Try searching for 'headphones' above!"
-    }
-
-    if (lowerMessage.includes("laptop") || lowerMessage.includes("computer")) {
-      return "For laptops, key factors include: processor speed, RAM, storage type (SSD vs HDD), screen size, and battery life. I'd recommend comparing specs alongside prices and reviews."
-    }
-
-    if (lowerMessage.includes("phone") || lowerMessage.includes("smartphone")) {
-      return "When shopping for phones, consider: camera quality, battery life, storage space, screen size, and operating system preference. Check reviews for real-world performance insights!"
-    }
-
-    if (lowerMessage.includes("help") || lowerMessage.includes("how")) {
-      return "I'm here to help! You can: 1) Search for products using the search bar, 2) Use filters to find best prices or reviews, 3) Sort results by different criteria, 4) Ask me about specific product categories. What would you like to know?"
-    }
-
-    // Default responses
-    const defaultResponses = [
-      "That's interesting! Have you tried searching for that product above? I can help you compare prices and reviews.",
-      "I'd be happy to help you with that! Try using the search function to find products, and I can guide you through the results.",
-      "Great question! The search tool above can help you find and compare products. What specific item are you looking for?",
-      "I can help you make the best purchasing decision! Search for a product and I'll explain how to use the filters and sorting options.",
-    ]
-
-    return defaultResponses[Math.floor(Math.random() * defaultResponses.length)]
-  }
-
-  const handleSendMessage = () => {
+  const handleSendMessage = async () => {
     if (!inputValue.trim()) return
 
+    const messageText = inputValue
     const userMessage: Message = {
       id: Date.now().toString(),
-      content: inputValue,
+      content: messageText,
       sender: "user",
       timestamp: new Date(),
     }
 
     setMessages((prev) => [...prev, userMessage])
     setInputValue("")
+    setIsSending(true)
 
-    // Simulate bot response delay
-    setTimeout(() => {
+    try {
+      if (!BASE_URL) {
+        throw new Error("Missing NEXT_PUBLIC_BACKEND_URL")
+      }
+
+      const response = await fetch(`${BASE_URL}/api/chat`, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        cache: "no-store",
+        body: JSON.stringify({
+          message: messageText,
+          searchQuery,
+          products: products.map((p) => ({
+            name: p.name,
+            price: p.price,
+            url: p.url,
+          })),
+          history: messages
+            .slice(-10)
+            .map((m): ChatHistoryItem => ({
+              role: m.sender === "user" ? "user" : "assistant",
+              content: m.content,
+            }))
+            .slice(-5),
+        }),
+      })
+
+      const payload = await response.json()
+      const replyText = response.ok && payload.reply
+        ? payload.reply
+        : "Error with message. Please try again shortly."
+
       const botResponse: Message = {
         id: (Date.now() + 1).toString(),
-        content: generateBotResponse(inputValue),
+        content: replyText,
         sender: "bot",
         timestamp: new Date(),
       }
       setMessages((prev) => [...prev, botResponse])
-    }, 1000)
+    } catch (error) {
+      const botResponse: Message = {
+        id: (Date.now() + 1).toString(),
+        content: "I couldn't reach the AI assistant right now. Please try again in a moment.",
+        sender: "bot",
+        timestamp: new Date(),
+      }
+      setMessages((prev) => [...prev, botResponse])
+    } finally {
+      setIsSending(false)
+    }
   }
 
   const handleKeyPress = (e: React.KeyboardEvent) => {
-    if (e.key === "Enter") {
+    if (e.key === "Enter" && !isSending) {
       handleSendMessage()
     }
   }
@@ -112,7 +131,7 @@ export function AIChatbot() {
         </Button>
       ) : (
         // Chat window
-        <Card className="w-80 h-96 flex flex-col shadow-xl">
+        <Card className="w-[min(92vw,420px)] h-[min(78vh,620px)] flex flex-col overflow-hidden shadow-xl overscroll-none">
           <CardHeader className="pb-2">
             <div className="flex items-center justify-between">
               <CardTitle className="text-sm flex items-center">
@@ -125,8 +144,8 @@ export function AIChatbot() {
             </div>
           </CardHeader>
 
-          <CardContent className="flex-1 p-0">
-            <ScrollArea className="h-full p-4">
+          <CardContent className="flex-1 min-h-0 p-0 overflow-hidden">
+            <div className="h-full overflow-y-auto overscroll-contain p-4">
               <div className="space-y-4">
                 {messages.map((message) => (
                   <div
@@ -134,7 +153,7 @@ export function AIChatbot() {
                     className={`flex gap-3 ${message.sender === "user" ? "justify-end" : "justify-start"}`}
                   >
                     {message.sender === "bot" && (
-                      <Avatar className="h-6 w-6">
+                      <Avatar className="h-6 w-6 shrink-0">
                         <AvatarFallback>
                           <Bot className="h-3 w-3" />
                         </AvatarFallback>
@@ -142,7 +161,7 @@ export function AIChatbot() {
                     )}
 
                     <div
-                      className={`max-w-[75%] rounded-lg p-2 text-xs ${
+                      className={`max-w-[80%] rounded-lg p-3 text-sm leading-relaxed break-all [overflow-wrap:anywhere] whitespace-pre-wrap overflow-hidden ${
                         message.sender === "user" ? "bg-primary text-primary-foreground" : "bg-muted"
                       }`}
                     >
@@ -150,7 +169,7 @@ export function AIChatbot() {
                     </div>
 
                     {message.sender === "user" && (
-                      <Avatar className="h-6 w-6">
+                      <Avatar className="h-6 w-6 shrink-0">
                         <AvatarFallback>
                           <User className="h-3 w-3" />
                         </AvatarFallback>
@@ -159,7 +178,7 @@ export function AIChatbot() {
                   </div>
                 ))}
               </div>
-            </ScrollArea>
+            </div>
           </CardContent>
 
           <CardFooter className="p-3">
@@ -170,8 +189,9 @@ export function AIChatbot() {
                 onChange={(e) => setInputValue(e.target.value)}
                 onKeyPress={handleKeyPress}
                 className="flex-1 text-sm"
+                disabled={isSending}
               />
-              <Button onClick={handleSendMessage} size="sm">
+              <Button onClick={handleSendMessage} size="sm" disabled={isSending || !inputValue.trim()}>
                 <Send className="h-3 w-3" />
               </Button>
             </div>
